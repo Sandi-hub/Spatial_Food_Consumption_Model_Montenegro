@@ -1,4 +1,6 @@
 import arcpy
+import numpy as np
+import pandas as pd
 
 # Set the Workspace of the ArcGIS project (Options > Current Setting > Default geodatabase)
 arcpy.env.workspace = r'C:\Users\srude\Documents\ArcGIS\Packages\MyProject_970f65\p20\myproject.gdb'
@@ -7,10 +9,15 @@ arcpy.env.workspace = r'C:\Users\srude\Documents\ArcGIS\Packages\MyProject_970f6
 supermarkets = ["HDL", "Franca_Geocoded", "Aroma_Geocoded", "Voli_Geocoded1", "Idea_Geocoded"]
 # set the outbreak layer
 outbreak = "locate_feature_class_2"
+field = "NEAR_DIST"
+
+# Set up Output Dataframe
+column_names = ["Supermarket", "Distance"]
+df_distances = pd.DataFrame(columns = column_names)
 
 
 def calculate_closest():
-
+    index = 1 
     # set optional parameters
     search_radius = "100000 Meters"
     location = "NO_LOCATION"
@@ -21,19 +28,18 @@ def calculate_closest():
 
     # calculate the distance to the nearest supermarket of each chain defined in the array supermarkets
     for supermarket in supermarkets:
-        out_table = "Output_" + supermarket
+        print(supermarket)
+        arcpy.Delete_management(r'memory\tempOutput_5')
         arcpy.GenerateNearTable_analysis(
-            outbreak, supermarket, out_table, search_radius, location, angle, closest, closest_count, method
+            outbreak, supermarket,r'memory\tempOutput_5' , search_radius, location, angle, closest, closest_count, method
         )
 
-
-def search_distances():
-    field = "NEAR_DIST"
-
-    for supermarket in supermarkets:
-        output_table = "C:/Users/admin/Documents/ArcGIS/Projects/MyProject/MyProject.gdb/Output_" + supermarket
-        with arcpy.da.SearchCursor(output_table, field) as cursor:
+        with arcpy.da.SearchCursor(r'memory\tempOutput_5', field) as cursor:
             for row in cursor:
+                df_distances.loc[index] =[supermarket,row[0]]
+                index = index + 1
                 print(supermarket + " " + str(row[0]))
+
+    print(df_distances)
 
 calculate_closest()
